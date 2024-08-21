@@ -1,0 +1,98 @@
+#!/bin/bash
+
+#### Begin initialization section
+
+INSTANCE_NAME="${instance_name}"
+ZONE="${instance_zone}"
+SDM_TOKEN="${sdm_token}"
+
+apt-get update
+apt-get install unzip
+
+#### End initialization section
+
+#### Begin StrongDM installation
+
+groupadd strongdm
+useradd strongdm -g strongdm -G google-sudoers
+mkdir /home/strongdm
+chown strongdm.strongdm /home/strongdm
+chmod 755 /home/strongdm
+
+cd /tmp
+
+curl -J -O -L https://app.strongdm.com/releases/cli/linux
+unzip ./sdmcli_*_linux_amd64.zip
+echo $SDM_TOKEN > sdm_token
+echo $SDM_TOKEN | ./sdm install --relay --user strongdm >sdm_log 2>&1
+
+#### End StrongDM installation
+
+##### Begin Chrome remote desktop section
+#
+#curl -L -o chrome-remote-desktop_current_amd64.deb \
+#  https://dl.google.com/linux/direct/chrome-remote-desktop_current_amd64.deb
+#sudo DEBIAN_FRONTEND=noninteractive \
+#  apt-get install --assume-yes ./chrome-remote-desktop_current_amd64.deb
+#gcloud compute instances add-labels "$INSTANCE_NAME" --labels="crdcompleted=true" --zone="$ZONE"
+#
+##### End Chrome remote desktop section
+#
+##### Begin Xfce section
+#
+#sudo DEBIAN_FRONTEND=noninteractive \
+#  apt install --assume-yes xfce4 desktop-base dbus-x11 xscreensaver
+#sudo bash -c 'echo "exec /etc/X11/Xsession /usr/bin/xfce4-session" > /etc/chrome-remote-desktop-session'
+#sudo apt install --assume-yes task-xfce-desktop
+#
+## Create the Polkit file to suppress the message about requiring
+## authentication to create a color managed device on Ubuntu 22.04.
+## This may need to be changed later.
+#
+#COLORD_POLKIT=/etc/polkit-1/localauthority/50-local.d/45-allow-colord.pkla
+#cat <<'EOF' > $COLORD_POLKIT
+#[Allow Colord all Users]
+#Identity=unix-user:*
+#Action=org.freedesktop.color-manager.create-device;org.freedesktop.color-manager.create-profile;org.freedesktop.color-manager.delete-device;org.freedesktop.color-manager.delete-profile;org.freedesktop.color-manager.modify-device;org.freedesktop.color-manager.modify-profile
+#ResultAny=no
+#ResultInactive=no
+#ResultActive=yes
+#EOF
+#chmod 755 $COLORD_POLKIT
+#gcloud compute instances add-labels "$INSTANCE_NAME" --labels="xfcecompleted=true" --zone="$ZONE"
+#
+##### End Xfce section
+#
+##### Begin Chrome broeser section
+#
+#curl -L -o google-chrome-stable_current_amd64.deb \
+#https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+#sudo apt install --assume-yes ./google-chrome-stable_current_amd64.deb
+#gcloud compute instances add-labels "$INSTANCE_NAME" --labels="chromecompleted=true" --zone="$ZONE"
+#
+##### End Chrome browser section
+#
+##### Begin final instance preparation section
+#
+## Create the 0010-check-virtualization file which will determine if nested
+## virtualization has been enabled.  It is based on the instructions at:
+## https://cloud.google.com/compute/docs/instances/nested-virtualization/enabling
+#
+#cat <<'EOF' > /usr/local/bin/0010-check-virtualization
+##/bin/sh
+#SCRIPT_NAME=`basename $0`
+#STATUS=`grep -cw vmx /proc/cpuinfo`
+#
+#if [ "$STATUS" -eq 0 ]
+#then
+#  echo $SCRIPT_NAME: Nested virtualization has not been enabled.
+#  RETURN_STATUS=1
+#else
+#  echo $SCRIPT_NAME: Nested virtualization has been enabled.
+#  RETURN_STATUS=0
+#fi
+#exit $RETURN_STATUS
+#EOF
+#chmod 755 /usr/local/bin/0010-check-virtualization
+#
+## End final instance preparation

@@ -1,0 +1,15 @@
+#!/bin/sh
+
+while :
+do
+  FOUND_LABEL_VALUE=`gcloud compute instances describe $INSTANCE_NAME \
+  --zone $ZONE --format json | \
+  jq --raw-output ".labels | .$LABEL_KEY"`
+
+  if [ "$FOUND_LABEL_VALUE" = "true" ]
+  then
+    break
+  fi
+
+  sleep 10
+done

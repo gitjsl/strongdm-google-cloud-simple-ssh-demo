@@ -1,0 +1,22 @@
+#!/bin/bash
+
+#### Begin initialization section
+
+INSTANCE_NAME="${instance_name}"
+ZONE="${instance_zone}"
+
+apt-get update
+
+#### End initialization section
+
+#### Begin StrongDM section
+
+# Create strongdm user for ssh login from StrongDM gateway
+
+groupadd strongdm
+useradd strongdm -g strongdm -G google-sudoers
+mkdir /home/strongdm
+chown strongdm.strongdm /home/strongdm
+chmod 755 /home/strongdm
+
+#### End strongDM section
