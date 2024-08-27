@@ -5,6 +5,8 @@
 INSTANCE_NAME="${instance_name}"
 ZONE="${instance_zone}"
 SDM_TOKEN="${sdm_token}"
+USER_NAME="${user_name}"
+GROUP_NAME="${group_name}"
 
 apt-get update
 apt-get install unzip
@@ -13,18 +15,18 @@ apt-get install unzip
 
 #### Begin StrongDM installation
 
-groupadd strongdm
-useradd strongdm -g strongdm -G google-sudoers
-mkdir /home/strongdm
-chown strongdm.strongdm /home/strongdm
-chmod 755 /home/strongdm
+groupadd "$GROUP_NAME"
+useradd "$USER_NAME" \
+--gid "$GROUP_NAME" \
+--groups google-sudoers \
+--create-home \
+--shell /bin/bash
 
 cd /tmp
 
 curl -J -O -L https://app.strongdm.com/releases/cli/linux
 unzip ./sdmcli_*_linux_amd64.zip
-echo $SDM_TOKEN > sdm_token
-echo $SDM_TOKEN | ./sdm install --relay --user strongdm >sdm_log 2>&1
+echo $SDM_TOKEN | ./sdm install --relay --user "$USER_NAME" >sdm_log 2>&1
 
 #### End StrongDM installation
 

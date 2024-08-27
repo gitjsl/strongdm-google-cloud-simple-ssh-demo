@@ -12,15 +12,36 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# The variables in this section must be defined.
+# Set name_prefix to a "short" value which will be prepended to
+# resources, and will also serve as an "owner" tag. You could user a
+# short username. It must be lowercase alphanumeric and begin with a letter.
 
-project_id  = "GOOGLE_CLOUD_PROJECT_ID"
+name_prefix = "SHORT_LOWERCASE_ALPHANUM_STRING"
+
+# Set project_id to your Google Cloud project id
+
+project_id = "GOOGLE_CLOUD_PROJECT_ID"
+
+# The SDM user ids are in the form of "a-XXXXXXXXXXXXXXXX".
+# The role created by Terraform will be attached to these SDM users/accounts.
+# You can find the SDM user ids from the "sdm admin users list" output.
+# The term "account id" is synonymous with "user id."
+
+sdm_user_ids = [
+  "a-XXXXXXXXXXXXXXXX",
+  ...
+  "a-XXXXXXXXXXXXXXXX"
+]
+
+# These are the access key and secret key associated with the API token.
+# The key should have privileges to create resources, roles, and manage accounts
+
 sdm_access_key = "STRONGDM_ACCESS_KEY"
 sdm_secret_key = "STRONGDM_SECRET_KEY"
 
-# The variables in this section are optional.
+# The variables below this section are optional.
 # The default values appear below.
-# Uncomment the values if needed.
+# Uncomment the lines and change the values if needed.
 
 #region = "us-central1"
 #zone = "us-central1-a"

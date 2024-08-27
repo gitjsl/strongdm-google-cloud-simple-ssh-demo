@@ -4,6 +4,9 @@
 
 INSTANCE_NAME="${instance_name}"
 ZONE="${instance_zone}"
+PUBLIC_KEY="${public_key}"
+USER_NAME="${user_name}"
+GROUP_NAME="${group_name}"
 
 apt-get update
 
@@ -13,10 +16,18 @@ apt-get update
 
 # Create strongdm user for ssh login from StrongDM gateway
 
-groupadd strongdm
-useradd strongdm -g strongdm -G google-sudoers
-mkdir /home/strongdm
-chown strongdm.strongdm /home/strongdm
-chmod 755 /home/strongdm
+HOMEDIR="/home/$USER_NAME"
+
+groupadd "$GROUP_NAME"
+useradd "$USER_NAME" \
+--gid "$GROUP_NAME" \
+--groups google-sudoers \
+--create-home \
+--shell /bin/bash
+
+mkdir --mode=700 $HOMEDIR/.ssh
+echo "$PUBLIC_KEY" > $HOMEDIR/.ssh/authorized_keys
+chmod 600 $HOMEDIR/.ssh/authorized_keys
+chown --recursive "$USER_NAME.$GROUP_NAME" $HOMEDIR/.ssh
 
 #### End strongDM section

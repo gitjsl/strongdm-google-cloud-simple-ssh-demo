@@ -187,13 +187,48 @@ resource "google_compute_address" "nat_external_ip" {
   description = "External IP for NAT gateway"
 }
 
-# Register StrongDM gateway
+# Register StrongDM components
 
-resource "sdm_node" "gw" {
+resource "sdm_node" "sdm_gateway" {
+
   gateway {
-    name = "jslevine-gw-${local.random_suffix}"
+    name = "${var.name_prefix}-gw-${local.random_suffix}"
     listen_address="${google_compute_address.gw_external_ip.address}:5000"
   }
+}
+
+resource "sdm_resource" "sdm_target_server" {
+
+  ssh {
+    name = "${var.name_prefix}-target-${local.random_suffix}"
+    hostname = google_compute_address.target_internal_ip.address
+    username="u${local.random_suffix}"
+    port = 22
+    tags = {
+      owner = "${var.name_prefix}"
+    }
+  }
+}
+
+resource "sdm_role" "sdm_access_role" {
+  name = "${var.name_prefix}-role-${local.random_suffix}"
+  tags = {
+    owner = "${var.name_prefix}"
+  }
+  access_rules = jsonencode([
+    {
+      "tags": {
+        owner: "${var.name_prefix}"
+      }
+    }
+  ])
+}
+
+resource "sdm_account_attachment" "multiple_account_attachments" {
+    for_each = toset(var.sdm_user_ids)
+
+    account_id = each.value
+    role_id = sdm_role.sdm_access_role.id
 }
 
 # Set up the StrongDM gateway instance
@@ -228,7 +263,9 @@ resource "google_compute_instance" "gw_server" {
       {
         instance_name="strongdm-gw-${local.random_suffix}"
         instance_zone="${var.zone}"
-        sdm_token=sdm_node.gw.gateway[0].token
+        user_name="u${local.random_suffix}"
+        group_name="g${local.random_suffix}"
+        sdm_token=sdm_node.sdm_gateway.gateway[0].token
       }
     )
   }
@@ -255,7 +292,7 @@ resource "google_compute_instance" "gw_server" {
   zone = var.zone
 }
 
-# Set up the StrongDM target instance
+# Set up the target instance
 #
 # Use depends_on to wait for the NAT gateway go be available so the
 # startup script can download packages.
@@ -287,6 +324,9 @@ resource "google_compute_instance" "target_server" {
       {
         instance_name="strongdm-target-${local.random_suffix}"
         instance_zone="${var.zone}"
+        public_key="${sdm_resource.sdm_target_server.ssh[0].public_key}"
+        user_name="u${local.random_suffix}"
+        group_name="g${local.random_suffix}"
       }
     )
   }

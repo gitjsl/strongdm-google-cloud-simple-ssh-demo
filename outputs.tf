@@ -12,26 +12,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-output "random_suffix_for_cloud_resource_names" {
+output "_05_prefix_for_resource_names_and_owner_tag" {
+  value = "${var.name_prefix}"
+}
+
+output "_10_suffix_for_resource_names" {
   value = "${local.random_suffix}"
 }
 
-#output "gw_ssh_command" {
-#  value = join("",
-#    [
-#      "gcloud compute ssh ",
-#      "${google_compute_instance.gw_server.name} ",
-#      "--zone ${var.zone} ",
-#      "--tunnel-through-iap ",
-#      "--project ${var.project_id}"
-#    ]
-#  )
-#}
-
-output "gw_external_ip" {
+output "_15_gateway_external_ip" {
   value = google_compute_instance.gw_server.network_interface.0.access_config.0.nat_ip
 }
 
-output "gw_internal_ip" {
+output "_20_gatewaw_internal_ip" {
   value = google_compute_instance.gw_server.network_interface.0.network_ip
+}
+
+output "_25_target_internal_ip" {
+  value = google_compute_instance.target_server.network_interface.0.network_ip
+}
+
+output "_30_user_name" {
+  value="u${local.random_suffix}"
+}
+
+output "_35_group_name" {
+  value="g${local.random_suffix}"
 }

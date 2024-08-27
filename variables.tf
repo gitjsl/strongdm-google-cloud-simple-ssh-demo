@@ -12,6 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+variable "name_prefix" {
+  description = "A prefix for resource names and the owner tag for StrongDM"
+  type = string
+}
+
 variable "project_id" {
   description = "The Google Cloud project ID to use for the API project"
   type = string
@@ -41,6 +46,11 @@ variable "iam_role_binding_duration" {
   default = "180s"
 }
 
+variable "sdm_user_ids" {
+  description = "StrongDM user ids (account ids)"
+  type = list(string)
+}
+
 variable "sdm_api_access_key" {
   description = "StrongDM API access key"
   type = string
@@ -50,3 +60,4 @@ variable "sdm_api_secret_key" {
   description = "StrongDM API secret key"
   type = string
 }
+
