@@ -8,6 +8,10 @@ The infrastructure consists of a Google Cloud VPC with an Ubuntu Linux server se
 The StrongDM gateway server has an external IP.
 The SSH server only has an internal IP.
 
+## Architecture
+
+![StrongDM Architecture ](img/StrongDM.png "StrongDM Architecture with one SSH Server")
+
 ## Instructions
 
 To be written!
