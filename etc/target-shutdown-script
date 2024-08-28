@@ -2,7 +2,3 @@
 
 INSTANCE_NAME="${instance_name}"
 ZONE="${instance_zone}"
-
-#gcloud compute instances remove-labels "$INSTANCE_NAME" \
-#--labels="crdcompleted,xfcecompleted,chromecompleted" \
-#--zone="$ZONE"

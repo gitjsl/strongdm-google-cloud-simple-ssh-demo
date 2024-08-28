@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# This file creates a demo environment of StrongDM on Google Cloud consisting
+# of a Strong DM gateway and a target SSH server that has no external IP.
+
 # Enable APIs
 
 resource "google_project_service" "compute_engine_service" {
@@ -26,6 +29,14 @@ resource "google_project_service" "service_networking_service" {
   provider = google
 
   service = "servicenetworking.googleapis.com"
+  disable_dependent_services = false
+  disable_on_destroy = false
+}
+
+resource "google_project_service" "iam_service" {
+  provider = google
+
+  service = "iam.googleapis.com"
   disable_dependent_services = false
   disable_on_destroy = false
 }
@@ -70,6 +81,9 @@ resource "google_service_account" "strongdm_gw_sa" {
 
   account_id = "gw-sa-${local.random_suffix}"
   description = "StrongDM Gateway Service Account"
+  depends_on = [
+    google_project_service.iam_service
+  ]
 }
 
 resource "google_service_account" "strongdm_target_sa" {
@@ -77,26 +91,34 @@ resource "google_service_account" "strongdm_target_sa" {
 
   account_id = "target-sa-${local.random_suffix}"
   description = "Target Service Account"
+  depends_on = [
+    google_project_service.iam_service
+  ]
 }
 
 # Firewall rules
 
-resource "google_compute_firewall" "iap_allow_ssh" {
-  provider = google
+# Rule to allow Google Cloud Identity-aware Proxy in case out-of-band
+# management is needed.
 
-  name = "allow-iap-ssh-${local.random_suffix}"
-  description = "Allow IAP SSH traffic to instances"
+# resource "google_compute_firewall" "iap_allow_ssh" {
+#   provider = google
+# 
+#   name = "allow-iap-ssh-${local.random_suffix}"
+#   description = "Allow IAP SSH traffic to instances"
+# 
+#   network = google_compute_network.vpc_network.name
+#   direction = "INGRESS"
+# 
+#   allow {
+#     protocol = "tcp"
+#     ports = ["22"]
+#   }
+# 
+#   source_ranges = [ "35.235.240.0/20" ]
+# }
 
-  network = google_compute_network.vpc_network.name
-  direction = "INGRESS"
-
-  allow {
-    protocol = "tcp"
-    ports = ["22"]
-  }
-
-  source_ranges = [ "35.235.240.0/20" ]
-}
+# Allow TCP 5000 to the StrongDM gateway server for incoming connections
 
 resource "google_compute_firewall" "allow_strongdm_gw" {
   provider = google
@@ -116,6 +138,8 @@ resource "google_compute_firewall" "allow_strongdm_gw" {
   target_service_accounts = [ google_service_account.strongdm_gw_sa.email ]
 }
 
+# Allow the StrongDM gateway to initiate connections to the SSH server
+
 resource "google_compute_firewall" "allow_strongdmgw_to_target" {
   provider = google
 
@@ -134,7 +158,8 @@ resource "google_compute_firewall" "allow_strongdmgw_to_target" {
   target_service_accounts=[ google_service_account.strongdm_target_sa.email ]
 }
 
-# Set up the NAT gateway and cloud router
+# Set up the NAT gateway and cloud router so that the ssh target server
+# can download updates as needed.
 
 resource "google_compute_router" "router" {
   provider = google
@@ -171,6 +196,7 @@ resource "google_compute_address" "gw_internal_ip" {
   name = "gw-int-${local.random_suffix}"
   subnetwork  = google_compute_subnetwork.public_subnet.id
   address_type = "INTERNAL"
+  address = "10.10.1.2"
   region = "us-central1"
 }
 
@@ -178,6 +204,7 @@ resource "google_compute_address" "target_internal_ip" {
   name = "target-int-${local.random_suffix}"
   subnetwork  = google_compute_subnetwork.public_subnet.id
   address_type = "INTERNAL"
+  address = "10.10.1.3"
   region = "us-central1"
 }
 
@@ -223,6 +250,8 @@ resource "sdm_role" "sdm_access_role" {
     }
   ])
 }
+
+# Attach account ids so that the appropriate users can access the target server
 
 resource "sdm_account_attachment" "multiple_account_attachments" {
     for_each = toset(var.sdm_user_ids)
@@ -349,57 +378,3 @@ resource "google_compute_instance" "target_server" {
 
   zone = var.zone
 }
-
-#resource "terraform_data" "gw_server_wait_chromeremotedesktop" {
-#  provisioner "local-exec" {
-#    command = "${path.module}/etc/waitforlabel-script"
-#
-#    environment = {
-#      INSTANCE_NAME="ubuntu-server-${local.random_suffix}"
-#      ZONE="us-central1-a"
-#      LABEL_KEY="crdcompleted"
-#      LABEL_VALUE="true"
-#      WAIT_MESSAGE="Installing Chrome Remote Desktop"
-#    }
-#  }
-#
-#  depends_on = [
-#    google_compute_instance.gw_server
-#  ]
-#}
-#
-#resource "terraform_data" "gw_server_wait_xfce" {
-#  provisioner "local-exec" {
-#    command = "${path.module}/etc/waitforlabel-script"
-#
-#    environment = {
-#      INSTANCE_NAME="ubuntu-server-${local.random_suffix}"
-#      ZONE="us-central1-a"
-#      LABEL_KEY="xfcecompleted"
-#      LABEL_VALUE="true"
-#      WAIT_MESSAGE="Installing Xfce"
-#    }
-#  }
-#
-#  depends_on = [
-#    terraform_data.gw_server_wait_chromeremotedesktop
-#  ]
-#}
-#
-#resource "terraform_data" "the_end_wait_chrome" {
-#  provisioner "local-exec" {
-#    command = "${path.module}/etc/waitforlabel-script"
-#
-#    environment = {
-#      INSTANCE_NAME="ubuntu-server-${local.random_suffix}"
-#      ZONE="us-central1-a"
-#      LABEL_KEY="chromecompleted"
-#      LABEL_VALUE="true"
-#      WAIT_MESSAGE="Installing Chrome browser"
-#    }
-#  }
-#
-#  depends_on = [
-#    terraform_data.gw_server_wait_xfce
-#  ]
-#}
